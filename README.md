@@ -29,7 +29,8 @@ or background change and follows changes other programs make to it.
   "background": "opaque",
   "left": ["launcher", "workspaces"],
   "center": ["clock"],
-  "right": ["tray", "bluetooth", "network", "audio", "power"]
+  "right": ["tray", "bluetooth", "network", "audio", "power"],
+  "hidden": []
 }
 ```
 
@@ -38,8 +39,16 @@ or background change and follows changes other programs make to it.
   (all tray icons without a place of their own), or `tray:<id>` (one tray icon, by its
   StatusNotifierItem id, e.g. `tray:maprisma-llm-monitor`; a second copy of an app
   gets `#2`). A placed icon whose app isn't running keeps its place and is hidden.
-- Anything unknown is dropped; a missing widget comes back in its default zone, a
-  missing `tray` at the start of `right`. So a file with only some entries is valid.
+- `hidden`: widgets and `tray:<id>` icons taken off the bar (Maprisma Manager's
+  "take out"); never `tray` itself. A hidden entry is drawn nowhere, not even in
+  the `tray` group, and wins over a zone and over a missing widget coming back.
+  The bar keeps the list when it rewrites the file. A file without it is valid.
+- Anything unknown is dropped; a missing widget comes back in its default zone (unless
+  hidden), a missing `tray` at the start of `right`. So a file with only some entries
+  is valid.
+- Other programs may write the file while the bar runs: it watches it. Write it
+  atomically (a temporary file, then rename); a half-written file is ignored and the
+  last good layout stays.
 
 ## Install
 

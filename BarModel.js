@@ -1,9 +1,10 @@
 .pragma library
 // The bar's layout, without QML: pure functions, tested by tests/run.sh.
 //
-// bar.json: { version, background, left: [...], center: [...], right: [...] }
+// bar.json: { version, background, left: [...], center: [...], right: [...], hidden: [...] }
 // An entry is a built-in widget id ("clock"), "tray" (every tray icon that has
 // no place of its own) or "tray:<item id>" (one tray icon placed by hand).
+// hidden: widgets and "tray:<id>" icons not drawn at all.
 
 var BUILTINS = ["launcher", "workspaces", "clock", "bluetooth", "network", "audio", "power"]
 var ZONES = ["left", "center", "right"]
@@ -15,7 +16,8 @@ function defaults() {
         background: "opaque",
         left: ["launcher", "workspaces"],
         center: ["clock"],
-        right: ["tray", "bluetooth", "network", "audio", "power"]
+        right: ["tray", "bluetooth", "network", "audio", "power"],
+        hidden: []
     }
 }
 
@@ -40,33 +42,42 @@ function validEntry(entry) {
     return /^tray:[^\x00-\x1f]{1,200}$/.test(entry)
 }
 
-// A layout that is whole: every built-in once, "tray" once, nothing unknown.
+// A layout that is whole: every built-in once (unless hidden), "tray" once,
+// nothing unknown. "hidden" lists widgets and tray icons taken off the bar
+// (Maprisma Manager's "take out"); hidden wins over a zone and over a missing
+// widget coming back.
 function normalize(cfg) {
-    var out = { version: 1, background: "opaque", left: [], center: [], right: [] }
+    var out = { version: 1, background: "opaque", left: [], center: [], right: [], hidden: [] }
     var d = defaults()
     if (!cfg || typeof cfg !== "object") cfg = d
     out.background = BACKGROUNDS.indexOf(cfg.background) >= 0 ? cfg.background : d.background
+    var hidden = Object.create(null)
+    var hiddenList = Array.isArray(cfg.hidden) ? cfg.hidden : []
+    for (var h = 0; h < hiddenList.length; h++) {
+        var x = hiddenList[h]
+        if (!validEntry(x) || x === "tray" || hidden[x] === true) continue
+        hidden[x] = true
+        out.hidden.push(x)
+    }
+    // A file without any valid zone entry gets the default zones.
+    var zones = cfg
+    var any = ZONES.some(function (zone) {
+        return Array.isArray(cfg[zone]) && cfg[zone].some(validEntry)
+    })
+    if (!any) zones = d
     var seen = Object.create(null)
-    var any = false
     for (var z = 0; z < ZONES.length; z++) {
-        var list = Array.isArray(cfg[ZONES[z]]) ? cfg[ZONES[z]] : []
+        var list = Array.isArray(zones[ZONES[z]]) ? zones[ZONES[z]] : []
         for (var i = 0; i < list.length; i++) {
             var e = list[i]
-            if (!validEntry(e) || seen[e]) continue
+            if (!validEntry(e) || seen[e] === true || hidden[e] === true) continue
             seen[e] = true
-            any = true
             out[ZONES[z]].push(e)
         }
     }
-    if (!any) {
-        var bg = out.background
-        out = normalize(d)
-        out.background = bg
-        return out
-    }
     for (var b = 0; b < BUILTINS.length; b++)
-        if (!seen[BUILTINS[b]]) out[defaultZone(BUILTINS[b])].push(BUILTINS[b])
-    if (!seen["tray"]) out.right.unshift("tray")
+        if (seen[BUILTINS[b]] !== true && hidden[BUILTINS[b]] !== true) out[defaultZone(BUILTINS[b])].push(BUILTINS[b])
+    if (seen["tray"] !== true) out.right.unshift("tray")
     return out
 }
 
@@ -82,6 +93,8 @@ function nextBackground(current) {
 function expand(cfg, trayIds) {
     cfg = normalize(cfg)
     var placed = Object.create(null)
+    for (var h = 0; h < cfg.hidden.length; h++)
+        if (cfg.hidden[h].indexOf("tray:") === 0) placed[cfg.hidden[h].slice(5)] = true
     for (var z = 0; z < ZONES.length; z++)
         for (var i = 0; i < cfg[ZONES[z]].length; i++)
             if (cfg[ZONES[z]][i].indexOf("tray:") === 0) placed[cfg[ZONES[z]][i].slice(5)] = true
@@ -146,8 +159,8 @@ function moveTo(expanded, key, zone, index) {
 
 // Back to bar.json's form. The marker becomes "tray" again with the grouped
 // icons that follow it; grouped icons split off from it get places of their own.
-function collapse(expanded, background) {
-    var cfg = { version: 1, background: BACKGROUNDS.indexOf(background) >= 0 ? background : "opaque", left: [], center: [], right: [] }
+function collapse(expanded, background, hidden) {
+    var cfg = { version: 1, background: BACKGROUNDS.indexOf(background) >= 0 ? background : "opaque", left: [], center: [], right: [], hidden: hidden || [] }
     var marker = false
     for (var z = 0; z < ZONES.length; z++) {
         var list = expanded[ZONES[z]]
@@ -174,7 +187,7 @@ function collapse(expanded, background) {
 // One drag and drop, from bar.json to bar.json.
 function move(cfg, trayIds, key, zone, index) {
     cfg = normalize(cfg)
-    return collapse(moveTo(expand(cfg, trayIds), key, zone, index), cfg.background)
+    return collapse(moveTo(expand(cfg, trayIds), key, zone, index), cfg.background, cfg.hidden)
 }
 
 // Tray item ids made unique (two copies of one app share an id).

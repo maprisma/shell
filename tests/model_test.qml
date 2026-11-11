@@ -27,7 +27,7 @@ Item {
         eq("normalize keeps a valid layout", M.normalize(d), d)
         eq("normalize adds missing builtins and tray",
            M.normalize({ left: ["clock"], center: [], right: [] }),
-           { version: 1, background: "opaque", left: ["clock", "launcher", "workspaces"], center: [], right: ["tray", "bluetooth", "network", "audio", "power"] })
+           { version: 1, background: "opaque", left: ["clock", "launcher", "workspaces"], center: [], right: ["tray", "bluetooth", "network", "audio", "power"], hidden: [] })
         eq("normalize drops unknown and duplicates",
            M.normalize({ background: "glassy", left: ["launcher", "bogus", "launcher", 5], center: ["clock", "tray:a", "tray:a"], right: ["tray"] }).center,
            ["clock", "tray:a"])
@@ -45,7 +45,7 @@ Item {
         // Moving a builtin within a zone and across zones.
         eq("move clock to the left end",
            M.move(d, trays, "clock", "left", 0),
-           { version: 1, background: "opaque", left: ["clock", "launcher", "workspaces"], center: [], right: ["tray", "bluetooth", "network", "audio", "power"] })
+           { version: 1, background: "opaque", left: ["clock", "launcher", "workspaces"], center: [], right: ["tray", "bluetooth", "network", "audio", "power"], hidden: [] })
         eq("move power before bluetooth (index counts visible, without the moved one)",
            M.move(d, trays, "power", "right", 3).right,
            ["tray", "power", "bluetooth", "network", "audio"])
@@ -92,6 +92,19 @@ Item {
            ["tray:constructor", "tray:toString", "tray:__proto__"])
         eq("a placed prototype-named icon that is not running hides",
            M.expand({ left: ["tray:constructor"] }, []).left[0].hidden, true)
+
+        // hidden (Maprisma Manager's "take out").
+        var hid = M.normalize({ left: ["launcher", "workspaces"], center: ["clock"], right: ["tray", "tray:b", "power"],
+                                hidden: ["launcher", "tray:b", "tray", "bogus", "launcher", 7, "tray:c"] })
+        eq("hidden keeps valid entries once, never tray", hid.hidden, ["launcher", "tray:b", "tray:c"])
+        eq("a hidden widget leaves its zone and does not come back", hid.left, ["workspaces"])
+        eq("a hidden tray icon leaves its zone", hid.right, ["tray", "power", "bluetooth", "network", "audio"])
+        eq("a hidden icon is not in the catch-all group", keys(M.expand(hid, ["a", "b", "c"]).right).slice(0, 2), ["tray:a", "power"])
+        eq("a drag keeps hidden", M.move(hid, ["a", "b", "c"], "power", "left", 0).hidden, ["launcher", "tray:b", "tray:c"])
+        eq("defaults have an empty hidden", M.normalize(null).hidden, [])
+        eq("an old file without hidden is fine", M.normalize({ left: ["clock"] }).hidden, [])
+        eq("everything hidden from a zone: defaults are not brought back",
+           M.normalize({ left: ["launcher"], hidden: ["launcher"] }).left, ["workspaces"])
 
         console.log(passed + " passed, " + failed + " failed")
         Qt.exit(failed ? 1 : 0)
