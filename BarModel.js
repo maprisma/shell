@@ -46,7 +46,7 @@ function normalize(cfg) {
     var d = defaults()
     if (!cfg || typeof cfg !== "object") cfg = d
     out.background = BACKGROUNDS.indexOf(cfg.background) >= 0 ? cfg.background : d.background
-    var seen = {}
+    var seen = Object.create(null)
     var any = false
     for (var z = 0; z < ZONES.length; z++) {
         var list = Array.isArray(cfg[ZONES[z]]) ? cfg[ZONES[z]] : []
@@ -81,11 +81,11 @@ function nextBackground(current) {
 // placed tray icon whose app is not running, or the empty marker).
 function expand(cfg, trayIds) {
     cfg = normalize(cfg)
-    var placed = {}
+    var placed = Object.create(null)
     for (var z = 0; z < ZONES.length; z++)
         for (var i = 0; i < cfg[ZONES[z]].length; i++)
             if (cfg[ZONES[z]][i].indexOf("tray:") === 0) placed[cfg[ZONES[z]][i].slice(5)] = true
-    var running = {}
+    var running = Object.create(null)
     for (var t = 0; t < trayIds.length; t++) running[trayIds[t]] = true
     var out = { left: [], center: [], right: [] }
     for (z = 0; z < ZONES.length; z++) {
@@ -93,14 +93,14 @@ function expand(cfg, trayIds) {
         for (i = 0; i < list.length; i++) {
             var e = list[i]
             if (e === "tray") {
-                var group = trayIds.filter(function (id) { return !placed[id] })
-                if (group.length === 0)
-                    out[ZONES[z]].push({ key: "tray", kind: "marker", id: "", group: false, hidden: true })
+                var group = trayIds.filter(function (id) { return placed[id] !== true })
+                // The group's place, kept even when its last icon is dragged away.
+                out[ZONES[z]].push({ key: "tray", kind: "marker", id: "", group: false, hidden: true })
                 for (var g = 0; g < group.length; g++)
                     out[ZONES[z]].push({ key: "tray:" + group[g], kind: "tray", id: group[g], group: true, hidden: false })
             } else if (e.indexOf("tray:") === 0) {
                 var id = e.slice(5)
-                out[ZONES[z]].push({ key: e, kind: "tray", id: id, group: false, hidden: !running[id] })
+                out[ZONES[z]].push({ key: e, kind: "tray", id: id, group: false, hidden: running[id] !== true })
             } else {
                 out[ZONES[z]].push({ key: e, kind: "builtin", id: e, group: false, hidden: false })
             }
@@ -138,12 +138,14 @@ function moveTo(expanded, key, zone, index) {
     if (index < 0) index = 0
     if (index < shown.length) at = shown[index]
     else at = shown.length ? shown[shown.length - 1] + 1 : target.length
+    // Before the group's first icon means before the group itself.
+    if (at > 0 && at < target.length && target[at].group && target[at - 1].kind === "marker") at -= 1
     target.splice(at, 0, moved)
     return out
 }
 
-// Back to bar.json's form. The first run of grouped tray icons becomes
-// "tray" again; grouped icons split off from it get places of their own.
+// Back to bar.json's form. The marker becomes "tray" again with the grouped
+// icons that follow it; grouped icons split off from it get places of their own.
 function collapse(expanded, background) {
     var cfg = { version: 1, background: BACKGROUNDS.indexOf(background) >= 0 ? background : "opaque", left: [], center: [], right: [] }
     var marker = false
@@ -155,15 +157,10 @@ function collapse(expanded, background) {
             if (e.kind === "marker") {
                 if (!marker) cfg[ZONES[z]].push("tray")
                 marker = true
-                inRun = false
+                inRun = true
             } else if (e.group) {
-                if (!marker) {
-                    cfg[ZONES[z]].push("tray")
-                    marker = true
-                    inRun = true
-                } else if (!inRun) {
-                    cfg[ZONES[z]].push(e.key)
-                }
+                // Grouped icons right after the marker stay grouped; others split off.
+                if (!inRun) cfg[ZONES[z]].push(e.key)
             } else {
                 // Hidden placed icons keep their place without ending the run.
                 if (!e.hidden) inRun = false
@@ -182,10 +179,18 @@ function move(cfg, trayIds, key, zone, index) {
 
 // Tray item ids made unique (two copies of one app share an id).
 function uniqueIds(ids) {
-    var count = {}
-    return ids.map(function (id) {
-        id = String(id || "item")
-        count[id] = (count[id] || 0) + 1
-        return count[id] > 1 ? id + "#" + count[id] : id
+    var names = ids.map(function (id) { return String(id || "item") })
+    var real = Object.create(null)
+    for (var i = 0; i < names.length; i++) real[names[i]] = true
+    var used = Object.create(null)
+    return names.map(function (id) {
+        if (used[id] !== true) {
+            used[id] = true
+            return id
+        }
+        var n = 2
+        while (used[id + "#" + n] === true || real[id + "#" + n] === true) n++
+        used[id + "#" + n] = true
+        return id + "#" + n
     })
 }

@@ -80,6 +80,19 @@ Item {
         eq("unique ids", M.uniqueIds(["chrome", "x", "chrome", ""]), ["chrome", "x", "chrome#2", "item"])
         eq("a move keeps the background", M.move({ background: "glassy", left: ["clock"] }, [], "clock", "right", 0).background, "glassy")
 
+        // Review findings (Codex): the group keeps its place when its last icon leaves.
+        var centered = M.normalize({ left: ["launcher", "workspaces"], center: ["clock", "tray"], right: ["bluetooth", "network", "audio", "power"] })
+        eq("last grouped icon dragged away: tray stays in center", M.move(centered, ["a"], "tray:a", "left", 0).center, ["clock", "tray"])
+        eq("and the icon is placed", M.move(centered, ["a"], "tray:a", "left", 0).left, ["tray:a", "launcher", "workspaces"])
+        eq("dropping before the group's first icon goes before the group",
+           M.move(d, trays, "power", "right", 0).right, ["power", "tray", "bluetooth", "network", "audio"])
+        eq("unique ids never take a real id", M.uniqueIds(["a", "a", "a#2"]), ["a", "a#3", "a#2"])
+        eq("prototype names are plain ids",
+           keys(M.expand(d, ["constructor", "toString", "__proto__"]).right).slice(0, 3),
+           ["tray:constructor", "tray:toString", "tray:__proto__"])
+        eq("a placed prototype-named icon that is not running hides",
+           M.expand({ left: ["tray:constructor"] }, []).left[0].hidden, true)
+
         console.log(passed + " passed, " + failed + " failed")
         Qt.exit(failed ? 1 : 0)
     }

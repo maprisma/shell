@@ -50,7 +50,11 @@ Singleton {
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
-        onLoaded: root.layout = M.normalize(M.parse(text()))
+        // A file caught half written (an editor saving) keeps the last good layout.
+        onLoaded: {
+            var cfg = M.parse(text())
+            if (cfg && typeof cfg === "object") root.layout = M.normalize(cfg)
+        }
         onLoadFailed: root.layout = M.normalize(null)
     }
 

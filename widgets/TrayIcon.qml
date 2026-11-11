@@ -36,7 +36,11 @@ Item {
             root.item.activate()
     }
     onWheel: (event) => {
-        if (root.item) root.item.scroll(event.angleDelta.y / 120, false)
+        // The raw wheel delta (120 a notch), as other tray hosts send it.
+        if (!root.item) return
+        var horizontal = event.angleDelta.x !== 0 && event.angleDelta.y === 0
+        var delta = horizontal ? event.angleDelta.x : event.angleDelta.y
+        if (delta !== 0) root.item.scroll(delta, horizontal)
     }
 
     // Symbolic icons take the bar's text colour, as GTK draws them; others keep theirs.
