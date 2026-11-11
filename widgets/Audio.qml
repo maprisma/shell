@@ -20,7 +20,8 @@ Glyph {
         if (button === Qt.RightButton) {
             if (root.sink && root.sink.audio) root.sink.audio.muted = !root.muted
         } else if (button === Qt.LeftButton) {
-            Quickshell.execDetached(["pwvucontrol"])
+            // A second click closes the mixer again, like a popup.
+            Quickshell.execDetached(["sh", "-c", "pkill -x pwvucontrol || exec pwvucontrol"])
         }
     }
     onWheel: (event) => {

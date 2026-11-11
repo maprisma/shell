@@ -15,7 +15,7 @@ Caelestia session and behaving like Omarchy's bar:
 
 Widgets: `launcher` (left: Maprisma Launcher, right: Caelestia's launcher),
 `workspaces`, `clock` (click: date), `bluetooth` and `network` (click: Maprisma
-Bluetooth / WLAN Monitor; network right: connection editor), `audio` (left: mixer,
+Bluetooth / WLAN Monitor; network right: connection editor), `audio` (left: mixer, a second click closes it;
 right: mute, wheel: volume), `power` (Caelestia's session menu).
 
 ## bar.json
