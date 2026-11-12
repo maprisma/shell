@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import Quickshell.Widgets
 import Quickshell.Services.SystemTray
 import qs.services
@@ -23,7 +24,19 @@ PanelWindow {
     implicitHeight: Settings.height
     color: "transparent"
     WlrLayershell.namespace: "maprisma-bar"
-    WlrLayershell.layer: WlrLayer.Top
+    // Overlay, not Top: Caelestia's drawers are a full-screen Top surface whose
+    // input region covers the top border band (all of the bar on an empty
+    // workspace). Whichever Top surface maps last gets the clicks, and at login
+    // that is Caelestia, so no icon would react. Over a fullscreen window the
+    // bar drops back to Top so the window covers it.
+    WlrLayershell.layer: fullscreen ? WlrLayer.Top : WlrLayer.Overlay
+
+    readonly property var monitor: Hyprland.monitorFor(screen)
+    readonly property bool fullscreen: {
+        var ws = monitor ? monitor.activeWorkspace : null
+        if (!ws) return false
+        return ws.toplevels.values.some(t => t.lastIpcObject && t.lastIpcObject.fullscreen > 1)
+    }
 
     // The tray items with unique keys (two copies of an app share an id).
     readonly property var trayItems: {

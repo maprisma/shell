@@ -23,6 +23,11 @@ ShellRoot {
         target: Hyprland
         function onRawEvent(event) {
             if (event.name === "configreloaded") blurRule.running = true
+            // The bar's fullscreen check reads each window's IPC state.
+            if (["fullscreen", "openwindow", "closewindow", "movewindow", "workspace", "focusedmon"].includes(event.name)) {
+                Hyprland.refreshToplevels()
+                Hyprland.refreshWorkspaces()
+            }
         }
     }
 }
