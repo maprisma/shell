@@ -4,7 +4,7 @@ import Quickshell.Hyprland
 import qs.services
 
 // This monitor's workspaces in the group of ten that holds its active one
-// (Caelestia's groups: 1-10, 11-20, …): five cells, more while a higher one
+// (groups 1-10, 11-20, …): five cells, more while a higher one
 // exists. A click goes there, the wheel to the next or previous one.
 Item {
     id: root

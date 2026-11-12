@@ -8,8 +8,7 @@ import "../BarModel.js" as M
 // The shell's files, all followed live:
 // - bar.json: the bar's layout and background (Maprisma Manager writes it too)
 // - shell.json: idle timeouts and the wallpaper (by hand, or the wallpaper by Maprisma Theme)
-// - scheme.json (state): the colours Maprisma Theme writes; Caelestia's file is read while
-//   ours doesn't exist yet, so a theme set before the switch still shows.
+// - scheme.json (state): the colours Maprisma Theme writes
 Singleton {
     id: root
 
@@ -21,12 +20,11 @@ Singleton {
     readonly property string configPath: configDir + "/bar.json"
     readonly property string shellPath: configDir + "/shell.json"
     readonly property string schemePath: stateDir + "/scheme.json"
-    readonly property string caelestiaSchemePath: stateHome + "/caelestia/scheme.json"
 
     property var layout: M.normalize(null)
     readonly property string background: layout.background
 
-    // shell.json with its defaults (Caelestia's idle times).
+    // shell.json with its defaults.
     property var shell: defaults()
     readonly property string wallpaper: shell.wallpaper || ""
     readonly property var idle: shell.idle
@@ -44,7 +42,6 @@ Singleton {
     }
 
     // The colours; dark defaults until a scheme is read.
-    property bool ownScheme: false
     property color surface: "#0a0f0f"
     property color surfaceContainer: "#131b1a"
     property color surfaceContainerHigh: "#1d2625"
@@ -70,12 +67,10 @@ Singleton {
         save(cfg)
     }
 
-    function applyScheme(textValue, own) {
-        if (!own && root.ownScheme) return
+    function applyScheme(textValue) {
         var scheme = M.parse(textValue)
         var c = scheme && scheme.colours
         if (!c) return
-        if (own) root.ownScheme = true
         function hex(name, fallback) {
             return /^[0-9a-fA-F]{6}$/.test(c[name] || "") ? "#" + c[name] : fallback
         }
@@ -139,14 +134,6 @@ Singleton {
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
-        onLoaded: root.applyScheme(text(), true)
-    }
-
-    FileView {
-        path: root.caelestiaSchemePath
-        watchChanges: true
-        printErrors: false
-        onFileChanged: reload()
-        onLoaded: root.applyScheme(text(), false)
+        onLoaded: root.applyScheme(text())
     }
 }

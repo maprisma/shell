@@ -5,7 +5,7 @@ import Quickshell.Services.Pam
 import qs.services
 
 // The lock screen (ext-session-lock): the wallpaper dimmed, the time, and a password field
-// checked through PAM (assets/pam.d/passwd: pam_unix with faillock, like Caelestia's).
+// checked through PAM (assets/pam.d/passwd: pam_unix with faillock).
 // `lock()` from the idle monitor, the session menu or IPC (shell lock).
 Scope {
     id: root

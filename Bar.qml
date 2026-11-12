@@ -25,11 +25,9 @@ PanelWindow {
     implicitHeight: Settings.height
     color: "transparent"
     WlrLayershell.namespace: "maprisma-bar"
-    // Overlay, not Top: Caelestia's drawers are a full-screen Top surface whose
-    // input region covers the top border band (all of the bar on an empty
-    // workspace). Whichever Top surface maps last gets the clicks, and at login
-    // that is Caelestia, so no icon would react. Over a fullscreen window the
-    // bar drops back to Top so the window covers it.
+    // Overlay, not Top: another program's full-screen Top surface mapped after
+    // the bar would take its clicks (the old Caelestia shell did). Over a
+    // fullscreen window the bar drops back to Top so the window covers it.
     WlrLayershell.layer: fullscreen ? WlrLayer.Top : WlrLayer.Overlay
 
     readonly property var monitor: Hyprland.monitorFor(screen)
