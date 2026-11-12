@@ -24,6 +24,12 @@ qs kill -c maprisma-shell >/dev/null 2>&1 || true
 qs kill -c maprisma-bar >/dev/null 2>&1 || true
 qs kill -p "$PWD/shell.qml" >/dev/null 2>&1 || true
 if [[ -n ${WAYLAND_DISPLAY:-} ]]; then
+  # Without Hyprland's socket name the shell can't reach Hyprland (no workspaces, clicks do
+  # nothing): a run from a stripped environment takes the newest running instance's.
+  if [[ -z ${HYPRLAND_INSTANCE_SIGNATURE:-} ]]; then
+    sock=$(ls -td "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/hypr/*/.socket.sock 2>/dev/null | head -n1 || true)
+    [[ -n $sock ]] && export HYPRLAND_INSTANCE_SIGNATURE=$(basename "$(dirname "$sock")")
+  fi
   setsid -f qs -c maprisma-shell -n -d >/dev/null 2>&1 < /dev/null || true
 fi
 echo "Installed Maprisma Shell into $dest"
