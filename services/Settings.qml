@@ -4,10 +4,13 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../BarModel.js" as M
+import "../NotifyModel.js" as N
 
 // The shell's files, all followed live:
 // - bar.json: the bar's layout and background (Maprisma Manager writes it too)
-// - shell.json: idle timeouts and the wallpaper (by hand, or the wallpaper by Maprisma Theme)
+// - shell.json: idle timeouts, the wallpaper (by hand, or the wallpaper by Maprisma Theme) and
+//   the notifications (do not disturb, popup position/timeout/max; Maprisma Notifier and
+//   Manager write it too)
 // - scheme.json (state): the colours Maprisma Theme writes
 Singleton {
     id: root
@@ -28,6 +31,7 @@ Singleton {
     property var shell: defaults()
     readonly property string wallpaper: shell.wallpaper || ""
     readonly property var idle: shell.idle
+    readonly property var notifications: shell.notifications
 
     function defaults() {
         return {
@@ -37,7 +41,8 @@ Singleton {
                 screenOff: 300,     // until the screens turn off
                 suspend: 600,       // until the computer suspends
                 whilePlaying: false // idle while media plays
-            }
+            },
+            notifications: N.defaults()  // { dnd, position, timeout, max }
         }
     }
 
@@ -103,6 +108,31 @@ Singleton {
         }
     }
 
+    // Do not disturb lives in shell.json (the shell keeps nothing in memory only):
+    // re-read the file, change notifications.dnd, keep every other key, write atomically.
+    // A file that isn't valid JSON is left alone.
+    function setDnd(on) {
+        shellWriter.reload()
+        var next = N.withDnd(shellWriter.text(), on === true)
+        if (next === null) {
+            console.warn("shell.json is not valid JSON; do not disturb not saved")
+            return false
+        }
+        var s = JSON.parse(JSON.stringify(root.shell))
+        s.notifications = N.normalize(JSON.parse(next))
+        root.shell = s
+        shellWriter.setText(next)
+        return true
+    }
+
+    FileView {
+        id: shellWriter
+        path: root.shellPath
+        blockAllReads: true
+        atomicWrites: true
+        printErrors: false
+    }
+
     FileView {
         path: root.shellPath
         watchChanges: true
@@ -123,7 +153,8 @@ Singleton {
                     screenOff: num(idle.screenOff, d.idle.screenOff),
                     suspend: num(idle.suspend, d.idle.suspend),
                     whilePlaying: idle.whilePlaying === true
-                }
+                },
+                notifications: N.normalize(cfg)
             }
         }
         onLoadFailed: root.shell = root.defaults()

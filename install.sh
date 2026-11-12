@@ -7,7 +7,7 @@ tests/run.sh
 dest="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/maprisma-shell"
 rm -rf "$dest.new"
 mkdir -p "$dest.new"
-cp -r shell.qml Bar.qml Slot.qml BarModel.js services widgets modules assets "$dest.new/"
+cp -r shell.qml Bar.qml Slot.qml BarModel.js NotifyModel.js services widgets modules assets "$dest.new/"
 rm -rf "$dest"
 mv "$dest.new" "$dest"
 # Helper commands for the Hyprland keys (screenshot, recording, clipboard, emoji).

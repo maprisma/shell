@@ -1,5 +1,6 @@
 import QtQuick
 import "../BarModel.js" as M
+import "../NotifyModel.js" as N
 
 // Run by tests/run.sh: qml6 headless, exits 0 when every check passes.
 Item {
@@ -105,6 +106,58 @@ Item {
         eq("an old file without hidden is fine", M.normalize({ left: ["clock"] }).hidden, [])
         eq("everything hidden from a zone: defaults are not brought back",
            M.normalize({ left: ["launcher"], hidden: ["launcher"] }).left, ["workspaces"])
+
+        // shell.json "notifications".
+        var nd = { dnd: false, position: "top-right", timeout: 5, max: 5 }
+        eq("notifications defaults", N.defaults(), nd)
+        eq("no file / garbage", [N.normalize(null), N.normalize("x"), N.normalize({}), N.normalize({ notifications: [] }), N.normalize({ notifications: 3 })], [nd, nd, nd, nd, nd])
+        eq("valid values kept", N.normalize({ notifications: { dnd: true, position: "bottom-left", timeout: 12, max: 3 } }),
+           { dnd: true, position: "bottom-left", timeout: 12, max: 3 })
+        eq("every position", N.POSITIONS.map(function (p) { return N.normalize({ notifications: { position: p } }).position }),
+           ["top-right", "top", "top-left", "bottom-right", "bottom-left"])
+        eq("bad types take the default", N.normalize({ notifications: { dnd: "true", position: "middle", timeout: "9", max: null } }), nd)
+        eq("dnd must be a bool", [N.normalize({ notifications: { dnd: 1 } }).dnd, N.normalize({ notifications: { dnd: true } }).dnd], [false, true])
+        eq("timeout clamped to 1..60", [0, -4, 61, 1e9, 2.6].map(function (t) { return N.normalize({ notifications: { timeout: t } }).timeout }), [1, 1, 60, 60, 3])
+        eq("max clamped to 1..10", [0, 11, 7].map(function (m) { return N.normalize({ notifications: { max: m } }).max }), [1, 10, 7])
+        eq("NaN/Infinity take the default", [N.normalize({ notifications: { timeout: NaN } }).timeout, N.normalize({ notifications: { max: Infinity } }).max], [5, 5])
+        eq("one bad key leaves the others", N.normalize({ notifications: { dnd: true, position: 4, timeout: 30 } }),
+           { dnd: true, position: "top-right", timeout: 30, max: 5 })
+
+        // setDnd's read-modify-write.
+        var shellText = JSON.stringify({ wallpaper: "/w.jpg", idle: { lock: 0 }, notifications: { position: "top", max: 2, extra: "x" }, other: [1] })
+        eq("withDnd keeps every other key", JSON.parse(N.withDnd(shellText, true)),
+           { wallpaper: "/w.jpg", idle: { lock: 0 }, notifications: { position: "top", max: 2, extra: "x", dnd: true }, other: [1] })
+        eq("withDnd off", JSON.parse(N.withDnd(N.withDnd(shellText, true), false)).notifications.dnd, false)
+        eq("withDnd on a missing or empty file", [JSON.parse(N.withDnd("", true)), JSON.parse(N.withDnd(null, false))],
+           [{ notifications: { dnd: true } }, { notifications: { dnd: false } }])
+        eq("withDnd replaces a bad notifications value", JSON.parse(N.withDnd('{"a":1,"notifications":"x"}', true)), { a: 1, notifications: { dnd: true } })
+        eq("withDnd never clobbers an unreadable file", [N.withDnd("{", true), N.withDnd("[1]", true), N.withDnd("3", true)], [null, null, null])
+        eq("withDnd ends with a newline", N.withDnd("{}", true).slice(-1), "\n")
+
+        // Popup placement.
+        eq("top-right", N.placement("top-right", 30),
+           { top: true, bottom: false, left: false, right: true, marginTop: 36, marginBottom: 0, marginLeft: 0, marginRight: 8 })
+        eq("top is centred (top edge only)", N.placement("top", 30),
+           { top: true, bottom: false, left: false, right: false, marginTop: 36, marginBottom: 0, marginLeft: 0, marginRight: 0 })
+        eq("top-left", N.placement("top-left", 30),
+           { top: true, bottom: false, left: true, right: false, marginTop: 36, marginBottom: 0, marginLeft: 8, marginRight: 0 })
+        eq("bottom-right", N.placement("bottom-right", 30),
+           { top: false, bottom: true, left: false, right: true, marginTop: 0, marginBottom: 8, marginLeft: 0, marginRight: 8 })
+        eq("bottom-left", N.placement("bottom-left", 30),
+           { top: false, bottom: true, left: true, right: false, marginTop: 0, marginBottom: 8, marginLeft: 8, marginRight: 0 })
+        eq("unknown position: top-right", N.placement("nowhere", 30), N.placement("top-right", 30))
+
+        // At most max popups, the oldest leave first.
+        var p = []
+        for (var i = 1; i <= 4; i++) p = N.push(p, i, 3).shown
+        eq("max 3 keeps the newest", p, [2, 3, 4])
+        eq("push reports the dropped", N.push([1, 2, 3], 4, 2), { shown: [3, 4], dropped: [1, 2] })
+        eq("push under max drops nothing", N.push([1], 2, 5), { shown: [1, 2], dropped: [] })
+        eq("the same item twice moves to the end", N.push([1, 2], 1, 5).shown, [2, 1])
+        eq("trim to a smaller max", N.trim([1, 2, 3, 4, 5], 2).shown, [4, 5])
+        eq("trim never below one", N.trim([1, 2], 0).shown, [2])
+        eq("remove", N.remove([1, 2, 3], 2), [1, 3])
+        eq("push does not change its input", (function () { var a = [1, 2]; N.push(a, 3, 1); return a })(), [1, 2])
 
         console.log(passed + " passed, " + failed + " failed")
         Qt.exit(failed ? 1 : 0)

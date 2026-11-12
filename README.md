@@ -5,8 +5,10 @@ config, in the colours of Maprisma Theme:
 
 - **Bar** on every screen, behaving like Omarchy's bar (details below).
 - **Wallpaper** (shell.json `wallpaper`; Maprisma Theme sets it).
-- **Notifications**: the shell is the notification server; popups at the top right, with
-  their actions. Click: the default action. ✕ or a right-click: dismiss.
+- **Notifications**: the shell is the notification server; popups on the focused screen
+  (top right unless shell.json `notifications` says otherwise), with their actions. Click:
+  the default action. ✕ or a right-click: dismiss. Do not disturb (shell.json, IPC
+  `setDnd`) holds the popups back; notifications are still received and tracked.
 - **Volume and brightness card** at the bottom when either changes. Brightness goes through
   `brightnessctl` (a backlight, e.g. a laptop).
 - **Lock screen** with the time and a password field (PAM: `assets/pam.d/passwd`,
@@ -40,7 +42,7 @@ second click closes it; right: mute, wheel: volume), `power` (the session menu).
 | File | What |
 |---|---|
 | `~/.config/maprisma-shell/bar.json` | the bar's layout (below); Maprisma Manager writes it too |
-| `~/.config/maprisma-shell/shell.json` | `wallpaper` (a path) and `idle` |
+| `~/.config/maprisma-shell/shell.json` | `wallpaper` (a path), `idle` and `notifications`; Maprisma Notifier and Manager write `notifications` too |
 | `~/.local/state/maprisma-shell/scheme.json` | the colours, written by Maprisma Theme |
 
 All are followed live. Write them atomically (a temporary file, then rename); a
@@ -56,6 +58,27 @@ half-written file is ignored.
 ```
 
 Idle times are seconds; 0 turns a step off. Missing keys take these defaults.
+
+`notifications` (defaults shown):
+
+```json
+"notifications": { "dnd": false, "position": "top-right", "timeout": 5, "max": 5 }
+```
+
+- `dnd`: do not disturb, `true`/`false`. While on, no popups; every notification is still
+  received and tracked (and Maprisma Notifier records it). The shell keeps it nowhere else:
+  the IPC `setDnd`/`doNotDisturb` write this key.
+- `position`: `top-right`, `top` (centred), `top-left`, `bottom-right` or `bottom-left`, on
+  the focused screen. At the top the popups sit just below the bar, otherwise 8 px from the
+  edges.
+- `timeout`: seconds a normal popup stays, 1–60 (unless the app asks for its own time);
+  critical ones stay until dismissed. The pointer over a popup holds it.
+- `max`: popups shown at once, 1–10; the oldest leave first (they stay tracked).
+- A value of the wrong type or an unknown position takes the default; numbers out of
+  range are clamped (and rounded to whole numbers).
+
+Every writer changes only its own keys: re-read the file, change the key, keep the rest,
+write a temporary file and rename it.
 
 ### scheme.json
 
@@ -95,7 +118,8 @@ Hyprland binds reach the shell as global shortcuts, scripts through IPC:
 |---|---|
 | `maprisma:lock` | `lock`, `unlock` |
 | `maprisma:session` | `session` |
-| `maprisma:clearNotifs` | `clearNotifs`, `doNotDisturb` |
+| `maprisma:clearNotifs` | `clearNotifs` |
+| | `setDnd <true\|false>`, `getDnd` (prints `true`/`false`), `doNotDisturb` (toggles) |
 | `maprisma:launcher` | `launcher` |
 | `maprisma:brightnessUp`, `maprisma:brightnessDown` | `brightness <step>` |
 
@@ -111,7 +135,7 @@ Helper commands, installed to `~/.local/bin`:
 ```sh
 ./install.sh                # tests, ~/.config/quickshell/maprisma-shell, helpers, restart
 qs -c maprisma-shell -n -d  # start (login: from Hyprland's execs)
-tests/run.sh                # the layout model's tests (qml6, headless)
+tests/run.sh                # the bar layout and notification settings tests (qml6, headless)
 ```
 
 A first install takes over Maprisma Bar's `~/.config/maprisma-bar/bar.json`.

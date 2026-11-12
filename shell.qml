@@ -71,7 +71,10 @@ ShellRoot {
         function unlock(): void { locker.unlock() }
         function session(): void { sessionMenu.open = !sessionMenu.open }
         function clearNotifs(): void { notifications.clear() }
-        function doNotDisturb(): void { notifications.doNotDisturb = !notifications.doNotDisturb }
+        // Do not disturb persists in shell.json notifications.dnd (Maprisma Notifier/Manager too).
+        function doNotDisturb(): void { notifications.toggleDnd() }
+        function setDnd(on: bool): void { notifications.setDnd(on) }
+        function getDnd(): string { return Settings.notifications.dnd ? "true" : "false" }
         function launcher(): void { shell.launcher() }
         function brightness(step: int): void { osd.brightness(step) }
     }

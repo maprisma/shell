@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The layout model's tests, headless (no display, no Quickshell needed).
+# The layout and notification models' tests, headless (no display, no Quickshell needed).
 set -euo pipefail
 cd "$(dirname "$0")"
 unset DISPLAY WAYLAND_DISPLAY
