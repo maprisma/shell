@@ -19,10 +19,11 @@ Item {
     implicitWidth: 30
     implicitHeight: Settings.height
 
+    // The menu in the bar's own colours (TrayMenu), centred under the icon.
     function menu(x) {
-        if (root.item && root.item.hasMenu) {
-            var p = root.mapToItem(null, x, 0)
-            root.item.display(root.window, p.x, Settings.height)
+        if (root.item && root.item.hasMenu && root.window && root.window.trayMenu) {
+            var p = root.mapToItem(null, root.width / 2, 0)
+            root.window.trayMenu.show(root.item, p.x)
         }
     }
 

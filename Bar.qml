@@ -5,6 +5,7 @@ import Quickshell.Hyprland
 import Quickshell.Widgets
 import Quickshell.Services.SystemTray
 import qs.services
+import qs.modules
 import "BarModel.js" as M
 
 // The bar on one screen: left, centre and right zones from bar.json.
@@ -46,6 +47,13 @@ PanelWindow {
     }
     readonly property var trayKeys: trayItems.map(t => t.key)
     readonly property var shown: M.expand(Settings.layout, trayKeys)
+
+    // The open tray menu (one per bar).
+    readonly property var trayMenu: menuPopup
+    TrayMenu {
+        id: menuPopup
+        screen: bar.screen
+    }
 
     // The drag in progress.
     property string dragKey: ""

@@ -5,28 +5,59 @@ import Quickshell
 import Quickshell.Io
 import "../BarModel.js" as M
 
-// bar.json (layout and background) and the colours, both followed live.
+// The shell's files, all followed live:
+// - bar.json: the bar's layout and background (Maprisma Manager writes it too)
+// - shell.json: idle timeouts and the wallpaper (by hand, or the wallpaper by Maprisma Theme)
+// - scheme.json (state): the colours Maprisma Theme writes; Caelestia's file is read while
+//   ours doesn't exist yet, so a theme set before the switch still shows.
 Singleton {
     id: root
 
     readonly property string home: Quickshell.env("HOME")
-    readonly property string configDir: (Quickshell.env("XDG_CONFIG_HOME") || home + "/.config") + "/maprisma-bar"
+    readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || home + "/.config"
+    readonly property string stateHome: Quickshell.env("XDG_STATE_HOME") || home + "/.local/state"
+    readonly property string configDir: configHome + "/maprisma-shell"
+    readonly property string stateDir: stateHome + "/maprisma-shell"
     readonly property string configPath: configDir + "/bar.json"
-    readonly property string schemePath: (Quickshell.env("XDG_STATE_HOME") || home + "/.local/state") + "/caelestia/scheme.json"
+    readonly property string shellPath: configDir + "/shell.json"
+    readonly property string schemePath: stateDir + "/scheme.json"
+    readonly property string caelestiaSchemePath: stateHome + "/caelestia/scheme.json"
 
     property var layout: M.normalize(null)
     readonly property string background: layout.background
 
-    // Caelestia's scheme; these are its dark defaults until the file is read.
+    // shell.json with its defaults (Caelestia's idle times).
+    property var shell: defaults()
+    readonly property string wallpaper: shell.wallpaper || ""
+    readonly property var idle: shell.idle
+
+    function defaults() {
+        return {
+            wallpaper: "",
+            idle: {
+                lock: 180,          // seconds idle until the screen locks (0: never)
+                screenOff: 300,     // until the screens turn off
+                suspend: 600,       // until the computer suspends
+                whilePlaying: false // idle while media plays
+            }
+        }
+    }
+
+    // The colours; dark defaults until a scheme is read.
+    property bool ownScheme: false
     property color surface: "#0a0f0f"
     property color surfaceContainer: "#131b1a"
+    property color surfaceContainerHigh: "#1d2625"
     property color text: "#dce8e6"
     property color dim: "#a2adac"
+    property color outline: "#6c7776"
     property color primary: "#9bd0cc"
+    property color primaryText: "#00201e"   // scheme "onPrimary" (a property called onX would be a handler)
     property color error: "#fa746f"
 
     readonly property string font: "JetBrainsMono Nerd Font"
     readonly property int height: 30
+    readonly property int radius: 12
 
     function save(cfg) {
         root.layout = M.normalize(cfg)
@@ -39,9 +70,29 @@ Singleton {
         save(cfg)
     }
 
+    function applyScheme(textValue, own) {
+        if (!own && root.ownScheme) return
+        var scheme = M.parse(textValue)
+        var c = scheme && scheme.colours
+        if (!c) return
+        if (own) root.ownScheme = true
+        function hex(name, fallback) {
+            return /^[0-9a-fA-F]{6}$/.test(c[name] || "") ? "#" + c[name] : fallback
+        }
+        root.surface = hex("surface", root.surface)
+        root.surfaceContainer = hex("surfaceContainer", root.surfaceContainer)
+        root.surfaceContainerHigh = hex("surfaceContainerHigh", root.surfaceContainerHigh)
+        root.text = hex("onSurface", root.text)
+        root.dim = hex("onSurfaceVariant", root.dim)
+        root.outline = hex("outline", root.outline)
+        root.primary = hex("primary", root.primary)
+        root.primaryText = hex("onPrimary", root.primaryText)
+        root.error = hex("error", root.error)
+    }
+
     Process {
         running: true
-        command: ["mkdir", "-p", root.configDir]
+        command: ["mkdir", "-p", root.configDir, root.stateDir]
     }
 
     FileView {
@@ -55,7 +106,32 @@ Singleton {
             var cfg = M.parse(text())
             if (cfg && typeof cfg === "object") root.layout = M.normalize(cfg)
         }
-        onLoadFailed: root.layout = M.normalize(null)
+    }
+
+    FileView {
+        path: root.shellPath
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: {
+            var cfg = M.parse(text())
+            var d = root.defaults()
+            if (!cfg || typeof cfg !== "object") return
+            var idle = cfg.idle && typeof cfg.idle === "object" ? cfg.idle : {}
+            function num(v, fallback) {
+                return typeof v === "number" && v >= 0 ? v : fallback
+            }
+            root.shell = {
+                wallpaper: typeof cfg.wallpaper === "string" ? cfg.wallpaper : "",
+                idle: {
+                    lock: num(idle.lock, d.idle.lock),
+                    screenOff: num(idle.screenOff, d.idle.screenOff),
+                    suspend: num(idle.suspend, d.idle.suspend),
+                    whilePlaying: idle.whilePlaying === true
+                }
+            }
+        }
+        onLoadFailed: root.shell = root.defaults()
     }
 
     FileView {
@@ -63,19 +139,14 @@ Singleton {
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
-        onLoaded: {
-            var scheme = M.parse(text())
-            var c = scheme && scheme.colours
-            if (!c) return
-            function hex(name, fallback) {
-                return /^[0-9a-fA-F]{6}$/.test(c[name] || "") ? "#" + c[name] : fallback
-            }
-            root.surface = hex("surface", root.surface)
-            root.surfaceContainer = hex("surfaceContainer", root.surfaceContainer)
-            root.text = hex("onSurface", root.text)
-            root.dim = hex("onSurfaceVariant", root.dim)
-            root.primary = hex("primary", root.primary)
-            root.error = hex("error", root.error)
-        }
+        onLoaded: root.applyScheme(text(), true)
+    }
+
+    FileView {
+        path: root.caelestiaSchemePath
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: root.applyScheme(text(), false)
     }
 }
