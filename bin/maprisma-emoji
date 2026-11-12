@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Emoji picker in fuzzel: the emoji goes to the clipboard; -p also types it.
+set -uo pipefail
+list=$(python3 -I - <<'PY'
+import unicodedata
+ranges = [(0x1F300, 0x1F5FF), (0x1F600, 0x1F64F), (0x1F680, 0x1F6FF), (0x1F900, 0x1F9FF),
+          (0x1FA70, 0x1FAFF), (0x2600, 0x26FF), (0x2700, 0x27BF), (0x1F1E6, 0x1F1FF)]
+for lo, hi in ranges:
+    for cp in range(lo, hi + 1):
+        name = unicodedata.name(chr(cp), "")
+        if name:
+            print(f"{chr(cp)}  {name.lower()}")
+PY
+)
+pick=$(printf '%s\n' "$list" | fuzzel --dmenu --prompt "Emoji: ") || exit 0
+emoji=${pick%%  *}
+printf '%s' "$emoji" | wl-copy
+[[ ${1:-} == -p ]] && wtype "$emoji"
+exit 0

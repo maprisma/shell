@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Screen recording with gpu-screen-recorder; the same command again stops it.
+#   maprisma-record        the focused screen
+#   maprisma-record -s     with the sound that plays
+#   maprisma-record -r     a region picked with the mouse (with -s too)
+set -uo pipefail
+if pid=$(pgrep -x gpu-screen-reco); then
+  kill -INT $pid
+  notify-send -a Recording "Recording saved" "in $(xdg-user-dir VIDEOS 2>/dev/null || echo ~/Videos)/Recordings"
+  exit 0
+fi
+sound= region=
+for a in "$@"; do
+  case $a in -s) sound=1 ;; -r) region=1 ;; *) echo "usage: maprisma-record [-s] [-r]" >&2; exit 2 ;; esac
+done
+dir="$(xdg-user-dir VIDEOS 2>/dev/null || echo "$HOME/Videos")/Recordings"
+mkdir -p "$dir"
+file="$dir/Recording_$(date +%Y-%m-%d_%H-%M-%S).mp4"
+args=(-f 60 -o "$file")
+if [[ -n $region ]]; then
+  geo=$(slurp -d -f '%wx%h+%x+%y') || exit 0
+  args=(-w region -region "$geo" "${args[@]}")
+else
+  mon=$(hyprctl monitors -j | python3 -I -c 'import json,sys; print(next((m["name"] for m in json.load(sys.stdin) if m["focused"]), ""))')
+  args=(-w "${mon:-screen}" "${args[@]}")
+fi
+[[ -n $sound ]] && args=(-a default_output "${args[@]}")
+notify-send -a Recording "Recording" "The same key stops it."
+setsid -f gpu-screen-recorder "${args[@]}" >/dev/null 2>&1 < /dev/null

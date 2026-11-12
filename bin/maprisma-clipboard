@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Clipboard history (cliphist) in fuzzel: pick an entry to copy it; -d deletes it instead.
+set -uo pipefail
+pick=$(cliphist list | fuzzel --dmenu --prompt "${1:+Delete: }Clipboard: " --width 60) || exit 0
+if [[ ${1:-} == -d ]]; then
+  printf '%s' "$pick" | cliphist delete
+else
+  printf '%s' "$pick" | cliphist decode | wl-copy
+fi
