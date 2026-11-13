@@ -3,7 +3,7 @@
 // pure functions, tested by tests/run.sh.
 //
 // "notifications": { "dnd": false, "position": "top-right", "timeout": 5, "max": 5 }
-// The same contract is read and written by Maprisma Notifier and Maprisma Manager.
+// The same contract is read and written by Maprisma Notifier and Maprisma Settings.
 
 var POSITIONS = ["top-right", "top", "top-left", "bottom-right", "bottom-left"]
 

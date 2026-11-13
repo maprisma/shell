@@ -44,7 +44,7 @@ function validEntry(entry) {
 
 // A layout that is whole: every built-in once (unless hidden), "tray" once,
 // nothing unknown. "hidden" lists widgets and tray icons taken off the bar
-// (Maprisma Manager's "take out"); hidden wins over a zone and over a missing
+// (Maprisma Settings' "take out"); hidden wins over a zone and over a missing
 // widget coming back.
 function normalize(cfg) {
     var out = { version: 1, background: "opaque", left: [], center: [], right: [], hidden: [] }

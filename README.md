@@ -41,7 +41,7 @@ second click closes it; right: mute, wheel: volume), `power` (the session menu).
 
 | File | What |
 |---|---|
-| `~/.config/maprisma-shell/bar.json` | the bar's layout (below); Maprisma Manager writes it too |
+| `~/.config/maprisma-shell/bar.json` | the bar's layout (below); Maprisma Settings writes it too |
 | `~/.config/maprisma-shell/shell.json` | `wallpaper` (a path), `idle` and `notifications`; Maprisma Notifier and Manager write `notifications` too |
 | `~/.local/state/maprisma-shell/scheme.json` | the colours, written by Maprisma Theme |
 
@@ -104,7 +104,7 @@ outline, primary, onPrimary and error.
   (all tray icons without a place of their own), or `tray:<id>` (one tray icon, by its
   StatusNotifierItem id, e.g. `tray:maprisma-llm-monitor`; a second copy of an app
   gets `#2`). A placed icon whose app isn't running keeps its place and is hidden.
-- `hidden`: widgets and `tray:<id>` icons taken off the bar (Maprisma Manager's
+- `hidden`: widgets and `tray:<id>` icons taken off the bar (Maprisma Settings'
   "take out"); never `tray` itself. A hidden entry is drawn nowhere, not even in
   the `tray` group, and wins over a zone and over a missing widget coming back.
 - Anything unknown is dropped; a missing widget comes back in its default zone (unless

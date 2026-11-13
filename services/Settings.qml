@@ -7,7 +7,7 @@ import "../BarModel.js" as M
 import "../NotifyModel.js" as N
 
 // The shell's files, all followed live:
-// - bar.json: the bar's layout and background (Maprisma Manager writes it too)
+// - bar.json: the bar's layout and background (Maprisma Settings writes it too)
 // - shell.json: idle timeouts, the wallpaper (by hand, or the wallpaper by Maprisma Theme) and
 //   the notifications (do not disturb, popup position/timeout/max; Maprisma Notifier and
 //   Manager write it too)

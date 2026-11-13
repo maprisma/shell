@@ -94,7 +94,7 @@ Item {
         eq("a placed prototype-named icon that is not running hides",
            M.expand({ left: ["tray:constructor"] }, []).left[0].hidden, true)
 
-        // hidden (Maprisma Manager's "take out").
+        // hidden (Maprisma Settings' "take out").
         var hid = M.normalize({ left: ["launcher", "workspaces"], center: ["clock"], right: ["tray", "tray:b", "power"],
                                 hidden: ["launcher", "tray:b", "tray", "bogus", "launcher", 7, "tray:c"] })
         eq("hidden keeps valid entries once, never tray", hid.hidden, ["launcher", "tray:b", "tray:c"])
