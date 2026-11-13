@@ -26,9 +26,13 @@ PanelWindow {
     color: "transparent"
     WlrLayershell.namespace: "maprisma-bar"
     // Overlay, not Top: another program's full-screen Top surface mapped after
-    // the bar would take its clicks (the old Caelestia shell did). Over a
-    // fullscreen window the bar drops back to Top so the window covers it.
-    WlrLayershell.layer: fullscreen ? WlrLayer.Top : WlrLayer.Overlay
+    // the bar would take its clicks (the old Caelestia shell did).
+    WlrLayershell.layer: WlrLayer.Overlay
+    // Over a fullscreen window the bar is unmapped. Dropping it to Top was not
+    // enough: Hyprland still draws Top layers over a fullscreen Chrome window
+    // (MagentaTV PWA, HDR video), and an unmapped bar also lets the window
+    // get direct scanout.
+    visible: !fullscreen
 
     readonly property var monitor: Hyprland.monitorFor(screen)
     readonly property bool fullscreen: {
