@@ -56,6 +56,8 @@ Singleton {
     property color primary: "#9bd0cc"
     property color primaryText: "#00201e"   // scheme "onPrimary" (a property called onX would be a handler)
     property color error: "#fa746f"
+    // "On" for Maprisma bar icons (-active-symbolic): the theme's green, as COSMIC's success colour.
+    property color success: "#86c79c"
 
     readonly property string font: "JetBrainsMono Nerd Font"
     readonly property int height: 30
@@ -88,6 +90,7 @@ Singleton {
         root.primary = hex("primary", root.primary)
         root.primaryText = hex("onPrimary", root.primaryText)
         root.error = hex("error", root.error)
+        root.success = hex("success", hex("term2", root.success))
     }
 
     Process {
