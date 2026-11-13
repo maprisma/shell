@@ -1,11 +1,15 @@
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 import qs.services
 
 // Left: Maprisma Launcher (shows or hides it). Right: the app launcher (fuzzel).
+// White like every Maprisma bar icon; the theme's green while the Launcher window is
+// open (the family's "on" colour, as TrayIcon draws -active-symbolic icons).
 Glyph {
+    readonly property bool open: ToplevelManager.toplevels.values.some(t => t.appId === "com.maprisma.Launcher")
     text: "󰣇"
-    color: Settings.primary
+    color: open ? Settings.success : Settings.text
     pixelSize: 16
     onClicked: (button) => {
         if (button === Qt.RightButton)
