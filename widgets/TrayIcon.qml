@@ -47,8 +47,8 @@ Item {
     // Symbolic icons take the bar's text colour, as GTK draws them; others keep theirs.
     readonly property bool symbolic: !!(item && /-symbolic(\?|$)/.test(String(item.icon)))
     // A Maprisma "-active-symbolic" icon (lights lit, model loaded, captions running …) takes
-    // the theme's green instead, as Plasma draws an SVG's ColorScheme-PositiveText class
-    // and COSMIC its success colour; every Maprisma app is "on" in this same colour.
+    // the theme accent instead, as Plasma draws an SVG's ColorScheme-Highlight class and COSMIC
+    // its accent colour; every Maprisma app is "on" in this same colour.
     readonly property bool active: !!(item && /-active-symbolic(\?|$)/.test(String(item.icon)))
 
     IconImage {
@@ -60,7 +60,7 @@ Item {
         layer.effect: MultiEffect {
             brightness: 1
             colorization: 1
-            colorizationColor: root.active ? Settings.success : Settings.text
+            colorizationColor: root.active ? Settings.primary : Settings.text
         }
     }
 }
