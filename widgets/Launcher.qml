@@ -7,6 +7,7 @@ import qs.services
 // White like every Maprisma bar icon; the theme accent while the Launcher window is
 // open (the family's "on" colour, as TrayIcon draws -active-symbolic icons).
 Glyph {
+    tipText: "Maprisma Launcher"
     readonly property bool open: ToplevelManager.toplevels.values.some(t => t.appId === "com.maprisma.Launcher")
     text: "󰣇"
     color: open ? Settings.primary : Settings.text

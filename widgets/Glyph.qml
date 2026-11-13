@@ -14,6 +14,8 @@ Item {
     property bool bold: false
     readonly property string ghostText: text
     readonly property string ghostIcon: ""
+    // The name in the hover tooltip (Slot); empty = no tooltip.
+    property string tipText: ""
 
     signal clicked(int button, real x, real y)
     signal wheel(var event)

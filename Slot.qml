@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Services.SystemTray
 import qs.services
 import qs.widgets
@@ -19,6 +20,17 @@ Item {
     width: visible && widget ? widget.implicitWidth : 0
     height: Settings.height
     opacity: host && host.dragKey === key ? 0.3 : 1
+
+    // The name shown in a small tooltip under the icon after a short hover: a
+    // widget's tipText, else a tray item's title (e.g. "Maprisma Hue Lights").
+    readonly property string tipText: {
+        var w = widget
+        if (!w) return ""
+        if (w.tipText !== undefined && w.tipText !== "") return w.tipText
+        if (w.item) return w.item.title || w.item.tooltipTitle || w.item.id || ""
+        return ""
+    }
+    property bool tipShown: false
 
     function trayItem(id) {
         var items = host ? host.trayItems : []
@@ -55,15 +67,55 @@ Item {
     Component { id: power; Power {} }
     Component { id: tray; TrayIcon { item: slot.trayItem(slot.modelData.id); window: slot.host } }
 
+    Timer {
+        id: tipDelay
+        interval: 600
+        onTriggered: slot.tipShown = slot.tipText !== ""
+    }
+
+    PopupWindow {
+        visible: slot.tipShown && slot.visible && !!slot.host && slot.host.visible
+        anchor.item: slot
+        anchor.rect.x: (slot.width - implicitWidth) / 2
+        anchor.rect.y: slot.height + 4
+        implicitWidth: tip.implicitWidth + 16
+        implicitHeight: tip.implicitHeight + 8
+        color: "transparent"
+        // Only shows the name: never takes a click or the pointer.
+        mask: Region {}
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Math.min(Settings.radius, 8)
+            color: Settings.surfaceContainerHigh
+            border.width: 1
+            border.color: Qt.rgba(Settings.outline.r, Settings.outline.g, Settings.outline.b, 0.4)
+            Text {
+                id: tip
+                anchors.centerIn: parent
+                text: slot.tipText
+                color: Settings.text
+                font.family: Settings.font
+                font.pixelSize: 12
+            }
+        }
+    }
+
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
         hoverEnabled: true
+        onContainsMouseChanged: {
+            if (containsMouse && !pressed) tipDelay.restart()
+            else { tipDelay.stop(); slot.tipShown = false }
+        }
         property point start
         property bool dragging: false
         property bool dragged: false
 
         onPressed: (mouse) => {
+            tipDelay.stop()
+            slot.tipShown = false
             start = Qt.point(mouse.x, mouse.y)
             dragging = false
             dragged = false

@@ -6,6 +6,7 @@ import qs.services
 // Wired, Wi-Fi strength or offline, from nmcli every 10 s; a click opens
 // Maprisma WLAN Monitor, a right click the connection editor.
 Glyph {
+    tipText: "Network"
     id: root
     property string kind: "none"
     property int signal: 0

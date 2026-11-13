@@ -5,6 +5,7 @@ import qs.services
 
 // The default output: left opens the mixer, right mutes, the wheel sets the volume.
 Glyph {
+    tipText: "Volume"
     id: root
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property real volume: sink && sink.audio ? sink.audio.volume : 0
